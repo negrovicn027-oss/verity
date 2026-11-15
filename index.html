@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Верити: Глитч в системе (Web)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas" width="500" height="500"></canvas>
+
+    <!-- Главное меню -->
+    <div id="menu" class="overlay active">
+        <h1 id="ui-title">ВЕРИТИ</h1>
+        <p id="ui-subtitle">ПРЫГАЕТ НА КРОВАТИ</p>
+        <p style="color: #ff6b6b;" id="ui-goal">ЦЕЛЬ: УБРАТЬ ДМИТРИЯ НАГИЕВА</p>
+        
+        <p id="ui-record" style="color: yellow;">Рекорд: 0</p>
+        <p id="ui-diff">Сложность:</p>
+        
+        <div class="row">
+            <button onclick="setDiff('slow', event)" id="btn-slow" class="diff-btn">Медленно</button>
+            <button onclick="setDiff('medium', event)" id="btn-medium" class="diff-btn active-diff">Средне</button>
+            <button onclick="setDiff('fast', event)" id="btn-fast" class="diff-btn">Быстро</button>
+        </div>
+        
+        <button class="btn-green" onclick="startGame()" id="btn-play">ИГРАТЬ</button>
+        <button class="btn-blue" onclick="startMultiplayer()" id="btn-mp">МУЛЬТИПЛЕЕР</button>
+        
+        <div class="row">
+            <button onclick="toggleMenu('shop')" id="btn-shop">МАГАЗИН</button>
+            <button onclick="toggleMenu('settings')" id="btn-settings">НАСТРОЙКИ</button>
+            <button onclick="toggleMenu('help')" id="btn-help">КАК ИГРАТЬ</button>
+        </div>
+        
+        <div class="row" style="margin-top: 15px;">
+            <button onclick="toggleLang()" id="btn-lang" style="background: #555;">EN</button>
+            <button onclick="toggleMusic()" id="btn-music" style="background: #2e7d32;">Музыка: ВКЛ</button>
+            <button onclick="nextTrack()" style="background: #555;">След. трек</button>
+        </div>
+    </div>
+
+    <!-- Настройки -->
+    <div id="settings" class="overlay">
+        <h2 id="ui-settings">НАСТРОЙКИ</h2>
+        <p>Громкость: <span id="vol-display">50</span>% (Клавиши + и -)</p>
+        <button onclick="toggleFullscreen()" id="btn-fs">ПОЛНОЭКРАННЫЙ</button>
+        <button onclick="toggleMenu('menu')" id="btn-settings-back">НАЗАД</button>
+    </div>
+
+    <!-- Как играть -->
+    <div id="help" class="overlay">
+        <h2 id="ui-help">КАК ИГРАТЬ</h2>
+        <div id="help-text" style="text-align: left; font-size: 14px; line-height: 1.5; color: #ddd; padding: 0 20px;">
+            <!-- Текст вставляется через JS -->
+        </div>
+        <button onclick="toggleMenu('menu')" id="btn-help-back" style="margin-top: 20px;">НАЗАД</button>
+    </div>
+
+    <!-- Магазин -->
+    <div id="shop" class="overlay">
+        <h2 id="ui-shop">МАГАЗИН</h2>
+        <p id="ui-points" style="color: cyan;">Очки: 0</p>
+        <div id="shop-items" style="display: flex; flex-direction: column; width: 80%;">
+            <!-- Предметы вставляются через JS -->
+        </div>
+        <button onclick="toggleMenu('menu')" id="btn-shop-back" style="margin-top: 15px;">НАЗАД</button>
+    </div>
+
+    <!-- Админ панель -->
+    <div id="admin" class="overlay">
+        <h2 style="color: red;">АДМИН ПАНЕЛЬ</h2>
+        <button class="btn-blue" onclick="adminAddScore()">+ 1000 Очков</button>
+        <button class="btn-green" onclick="adminAddLives()">+ 5 Жизней</button>
+        <button class="btn-red" onclick="adminKillAll()">Убить всех Нагиевых</button>
+        <button id="btn-god" onclick="adminGodMode()">Бессмертие: ВЫКЛ</button>
+        <button onclick="toggleMenu('playing')" style="margin-top: 20px;">ЗАКРЫТЬ (TAB)</button>
+    </div>
+
+    <!-- Конец игры -->
+    <div id="gameover" class="overlay">
+        <h1 id="go-title" style="color: red;">НАГИЕВ ПОБЕДИЛ...</h1>
+        <h2 id="go-score">Счет: 0</h2>
+        <button onclick="restartGame()" id="btn-restart" style="margin-top: 20px;">R - ИГРАТЬ СНОВА</button>
+        <button onclick="toggleMenu('menu')" id="btn-menu">M - В МЕНЮ</button>
+    </div>
+
+    <!-- Глитч Победа -->
+    <div id="glitch-victory" class="overlay" style="background: black;">
+        <h1 class="glitch-text" style="font-size: 40px;">ГЛИТЧ ПОБЕДА</h1>
+        <h2>РЕАЛЬНОСТЬ СЛОМАНА</h2>
+        <p id="gv-score">Счет: 0</p>
+        <button onclick="restartGame()" style="margin-top: 20px;">R - ИГРАТЬ СНОВА</button>
+        <button onclick="toggleMenu('menu')">M - В МЕНЮ</button>
+    </div>
+</div>
+
+<!-- Аудио -->
+<audio id="bgm" loop></audio>
+<audio id="sfx-break" src="game_over.mp3" preload="auto"></audio>
+<audio id="sfx-victory" src="victory.ogg" preload="auto"></audio>
+
+<script src="script.js"></script>
+</body>
+</html>+
