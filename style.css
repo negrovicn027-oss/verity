@@ -12,13 +12,12 @@ body {
     user-select: none;
 }
 
-/* Контейнер увеличен до 700x700 с адаптивностью */
+/* ИДЕАЛЬНЫЙ КВАДРАТ, КОТОРЫЙ ПОДСТРАИВАЕТСЯ ПОД ЭКРАН */
 #game-container {
     position: relative;
-    width: 700px;
-    height: 700px;
-    max-width: 95vw;
-    max-height: 95vh;
+    /* Берет минимальное значение: либо 95% ширины, либо 95% высоты, но не больше 700px */
+    width: min(95vw, 95vh, 700px); 
+    height: min(95vw, 95vh, 700px);
     box-shadow: 0 0 30px rgba(255, 255, 0, 0.2);
     border-radius: 10px;
 }
@@ -31,7 +30,6 @@ canvas {
     border-radius: 10px;
 }
 
-/* UI Overlays */
 .overlay {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -42,6 +40,8 @@ canvas {
     align-items: center;
     border-radius: 10px;
     z-index: 10;
+    /* Чтобы кнопки не вылезали на маленьких экранах */
+    overflow-y: auto; 
 }
 
 .overlay.active {
@@ -87,18 +87,9 @@ button:hover {
 .btn-blue { background: #1565c0; border-color: #42a5f5; }
 
 .row { display: flex; flex-wrap: wrap; justify-content: center; width: 90%; }
-.hidden { display: none !important; }
+.diff-btn { border-color: white; }
+.active-diff { border-color: yellow; box-shadow: 0 0 15px yellow; }
 
-/* Кнопки сложности */
-.diff-btn {
-    border-color: white;
-}
-.active-diff {
-    border-color: yellow;
-    box-shadow: 0 0 15px yellow;
-}
-
-/* Glitch effect */
 @keyframes glitch {
     0% { transform: translate(0) }
     20% { transform: translate(-5px, 5px) }
@@ -107,8 +98,4 @@ button:hover {
     80% { transform: translate(5px, -5px) }
     100% { transform: translate(0) }
 }
-
-.glitch-text {
-    animation: glitch 0.2s infinite;
-    color: #ff00ff;
-}
+.glitch-text { animation: glitch 0.2s infinite; color: #ff00ff; }
