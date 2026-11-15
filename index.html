@@ -9,7 +9,7 @@
 <body>
 
 <div id="game-container">
-    <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <canvas id="gameCanvas" width="700" height="700"></canvas>
 
     <!-- Главное меню -->
     <div id="menu" class="overlay active">
@@ -53,7 +53,7 @@
     <!-- Как играть -->
     <div id="help" class="overlay">
         <h2 id="ui-help">КАК ИГРАТЬ</h2>
-        <div id="help-text" style="text-align: left; font-size: 14px; line-height: 1.5; color: #ddd; padding: 0 20px;">
+        <div id="help-text" style="text-align: left; font-size: 16px; line-height: 1.6; color: #ddd; padding: 0 30px;">
             <!-- Текст вставляется через JS -->
         </div>
         <button onclick="toggleMenu('menu')" id="btn-help-back" style="margin-top: 20px;">НАЗАД</button>
@@ -62,11 +62,11 @@
     <!-- Магазин -->
     <div id="shop" class="overlay">
         <h2 id="ui-shop">МАГАЗИН</h2>
-        <p id="ui-points" style="color: cyan;">Очки: 0</p>
-        <div id="shop-items" style="display: flex; flex-direction: column; width: 80%;">
+        <p id="ui-points" style="color: cyan; font-size: 20px;">Очки: 0</p>
+        <div id="shop-items" style="display: flex; flex-direction: column; width: 60%;">
             <!-- Предметы вставляются через JS -->
         </div>
-        <button onclick="toggleMenu('menu')" id="btn-shop-back" style="margin-top: 15px;">НАЗАД</button>
+        <button onclick="toggleMenu('menu')" id="btn-shop-back" style="margin-top: 20px;">НАЗАД</button>
     </div>
 
     <!-- Админ панель -->
@@ -84,24 +84,24 @@
         <h1 id="go-title" style="color: red;">НАГИЕВ ПОБЕДИЛ...</h1>
         <h2 id="go-score">Счет: 0</h2>
         <button onclick="restartGame()" id="btn-restart" style="margin-top: 20px;">R - ИГРАТЬ СНОВА</button>
-        <button onclick="toggleMenu('menu')" id="btn-menu">M - В МЕНЮ</button>
+        <button onclick="goToMenu()" id="btn-menu">M - В МЕНЮ</button>
     </div>
 
     <!-- Глитч Победа -->
     <div id="glitch-victory" class="overlay" style="background: black;">
-        <h1 class="glitch-text" style="font-size: 40px;">ГЛИТЧ ПОБЕДА</h1>
+        <h1 class="glitch-text" style="font-size: 50px;">ГЛИТЧ ПОБЕДА</h1>
         <h2>РЕАЛЬНОСТЬ СЛОМАНА</h2>
         <p id="gv-score">Счет: 0</p>
         <button onclick="restartGame()" style="margin-top: 20px;">R - ИГРАТЬ СНОВА</button>
-        <button onclick="toggleMenu('menu')">M - В МЕНЮ</button>
+        <button onclick="goToMenu()">M - В МЕНЮ</button>
     </div>
 </div>
 
 <!-- Аудио -->
 <audio id="bgm" loop></audio>
-<audio id="sfx-break" src="game_over.mp3" preload="auto"></audio>
+<audio id="sfx-gameover" src="game_over.mp3" preload="auto"></audio>
 <audio id="sfx-victory" src="victory.ogg" preload="auto"></audio>
 
 <script src="script.js"></script>
 </body>
-</html>+
+</html>
