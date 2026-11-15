@@ -1,7 +1,6 @@
 // --- НАСТРОЙКИ И ПЕРЕМЕННЫЕ ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-// УВЕЛИЧИЛИ ЭКРАН ДО 700x700
 const WIDTH = 700, HEIGHT = 700; 
 
 let gameState = 'menu'; 
@@ -38,31 +37,53 @@ const TEXTS = {
     }
 };
 
-// Физика и объекты
-let bed, verity, ball, enemies = [], powerups = [], particles = [];
+let bed, verity, enemies = [], powerups = [], particles = [];
 let dx = 5, dy = -5, platformSpeed = 6;
 let currentDiffSpeed = 5;
-
-// Управление
 const keys = { left: false, right: false, w: false, s: false, up: false, down: false };
 
-// Мультиплеер
-let p1Y = 300, p2Y = 300, p1Score = 0, p2Score = 0, mpDx = 6, mpDy = 6, mpBall = {x: WIDTH/2, y: HEIGHT/2, size: 30};
+let p1Y = 300, p2Y = 300, p1Score = 0, p2Score = 0, mpDx = 6, mpDy = 6, mpBall = {x: 350, y: 350, size: 30};
 
-// Ассеты
 const imgs = { verity: new Image(), bed: new Image(), egg: new Image() };
 imgs.verity.src = 'verity.png'; imgs.bed.src = 'bed.png'; imgs.egg.src = 'egg.png';
 imgs.verity.onerror = () => imgs.verity.isBroken = true;
 imgs.bed.onerror = () => imgs.bed.isBroken = true;
 imgs.egg.onerror = () => imgs.egg.isBroken = true;
 
-// Аудио
+// --- АУДИО СИСТЕМА ---
 const bgm = document.getElementById('bgm');
 const playlist = ['verity_theme.mp3', 'track2.mp3', 'track3.mp3'];
-let trackIdx = 0, musicPlaying = true, volume = 0.5;
+let trackIdx = 0;
+let musicPlaying = true;
+let volume = 0.5;
 bgm.volume = volume;
 
-// Функция остановки всех SFX
+// Подготовка трека без запуска
+bgm.src = playlist[trackIdx];
+
+function playMusic() {
+    if (!musicPlaying) return;
+    bgm.play().catch(e => {
+        console.log("Браузер заблокировал музыку. Ждем клика.", e);
+    });
+}
+
+// МАГИЯ: Разблокировка звука при первом же клике или нажатии клавиши
+function unlockAudio() {
+    if (musicPlaying && bgm.paused) {
+        playMusic();
+    }
+    // Удаляем события после первого клика, они больше не нужны
+    document.removeEventListener('pointerdown', unlockAudio);
+    document.removeEventListener('keydown', unlockAudio);
+}
+
+// Слушаем ЛЮБОЕ касание экрана или нажатие клавиши
+document.addEventListener('pointerdown', unlockAudio, { once: true });
+document.addEventListener('keydown', unlockAudio, { once: true });
+
+bgm.onended = () => { trackIdx = (trackIdx + 1) % playlist.length; bgm.src = playlist[trackIdx]; playMusic(); };
+
 function stopAllSfx() {
     const sfx1 = document.getElementById('sfx-gameover');
     const sfx2 = document.getElementById('sfx-victory');
@@ -70,14 +91,6 @@ function stopAllSfx() {
     if (sfx2) { sfx2.pause(); sfx2.currentTime = 0; }
 }
 
-function playMusic() {
-    if (!musicPlaying) return;
-    bgm.src = playlist[trackIdx];
-    bgm.play().catch(() => { musicPlaying = false; });
-}
-bgm.onended = () => { trackIdx = (trackIdx + 1) % playlist.length; playMusic(); };
-
-// --- УТИЛИТЫ ---
 function drawText(text, x, y, size, color, center = true) {
     ctx.fillStyle = color;
     ctx.font = `bold ${size}px Verdana`;
@@ -88,29 +101,25 @@ function drawText(text, x, y, size, color, center = true) {
 
 function playSfx(id) {
     const audio = document.getElementById(id);
-    if (audio) {
-        audio.currentTime = 0;
-        audio.play().catch(()=>{});
-    }
+    if (audio) { audio.currentTime = 0; audio.play().catch(()=>{}); }
 }
 
 // --- ИНИЦИАЛИЗАЦИЯ ИГРЫ ---
 function startGame() {
-    stopAllSfx(); // Останавливаем старые звуки
+    stopAllSfx();
     toggleMenu('playing');
     score = 0; lives = 3; level = 1; platformSpeed = 6;
     isSecretLevel = false; godMode = false;
     createLevel();
+    if (musicPlaying) playMusic(); // Возобновляем музыку
 }
 
 function createLevel() {
     verity = { x: WIDTH/2 - 15, y: HEIGHT/2, w: 30, h: 30 };
-    bed = { x: WIDTH/2 - 50, y: HEIGHT - 60, w: 100, h: 30 }; // Подняли кровать чуть выше
-    enemies = [];
-    powerups = [];
-    particles = [];
+    bed = { x: WIDTH/2 - 50, y: HEIGHT - 60, w: 100, h: 30 };
+    enemies = []; powerups = []; particles = [];
     
-    let speedBase = isSecretLevel ? 4 : (gameState === 'multiplayer' ? 6 : currentDiffSpeed + (level-1)*0.5);
+    let speedBase = isSecretLevel ? 4 : (currentDiffSpeed + (level-1)*0.5);
     dx = speedBase; dy = -speedBase;
 
     let rows = isSecretLevel ? 6 : 5;
@@ -118,7 +127,7 @@ function createLevel() {
     let spacing = isSecretLevel ? 45 : 55;
 
     for (let j = 0; j < rows; j++) {
-        let y = 80 + (45 * j); // Чуть ниже от верха
+        let y = 80 + (45 * j);
         let x = WIDTH/2 - (count * spacing)/2;
         for (let i = 0; i < count; i++) {
             enemies.push({ x: x, y: y, w: 45, h: 45 });
@@ -129,19 +138,18 @@ function createLevel() {
 }
 
 function restartGame() {
-    stopAllSfx(); // Глушим звук проигрыша
+    stopAllSfx(); 
     document.getElementById('gameover').classList.remove('active');
     document.getElementById('glitch-victory').classList.remove('active');
     startGame();
 }
 
 function goToMenu() {
-    stopAllSfx(); // Глушим звук проигрыша при выходе в меню
+    stopAllSfx(); 
     if (score > highScore) highScore = score;
-    document.getElementById('go-score').innerText = TEXTS[currentLang].total + score;
     document.getElementById('ui-record').innerText = TEXTS[currentLang].record + highScore;
     toggleMenu('menu');
-    if (musicPlaying) playMusic(); // Возобновляем фоновую музыку
+    if (musicPlaying) playMusic(); // Возобновляем музыку
 }
 
 // --- МУЛЬТИПЛЕЕР ---
@@ -153,7 +161,6 @@ function startMultiplayer() {
     toggleMenu('multiplayer');
 }
 
-// --- МЕНЮ И UI ---
 function toggleMenu(state) {
     document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active'));
     document.getElementById('menu').classList.remove('active');
@@ -175,7 +182,6 @@ function toggleMenu(state) {
 function setDiff(diff, event) {
     document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active-diff'));
     event.target.classList.add('active-diff');
-    
     if (diff === 'slow') currentDiffSpeed = 3;
     else if (diff === 'medium') currentDiffSpeed = 5;
     else if (diff === 'fast') currentDiffSpeed = 7;
@@ -205,27 +211,26 @@ function toggleLang() {
     document.getElementById('btn-restart').innerText = t.restart;
     document.getElementById('btn-menu').innerText = t.menu;
     document.getElementById('btn-fs').innerText = t.fs;
-    
+    document.getElementById('btn-music').innerText = musicPlaying ? t.music : t.muted;
     if (gameState === 'shop') updateShopUI();
 }
 
 function toggleMusic() {
     musicPlaying = !musicPlaying;
-    if (musicPlaying) bgm.play().catch(()=>{}); else bgm.pause();
+    if (musicPlaying) playMusic(); 
+    else bgm.pause();
     document.getElementById('btn-music').innerText = musicPlaying ? TEXTS[currentLang].music : TEXTS[currentLang].muted;
 }
 
 function nextTrack() {
     trackIdx = (trackIdx + 1) % playlist.length;
+    bgm.src = playlist[trackIdx];
     if (musicPlaying) playMusic();
 }
 
 function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-    } else {
-        document.exitFullscreen();
-    }
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
 }
 
 // --- МАГАЗИН ---
@@ -242,7 +247,6 @@ function updateShopUI() {
     shopItems.forEach((item, idx) => {
         let btn = document.createElement('button');
         btn.innerText = `${item.name} - ${item.cost}`;
-        btn.style.margin = '8px 0';
         btn.style.background = score >= item.cost ? '#2e7d32' : '#444';
         btn.onclick = () => buyItem(idx);
         container.appendChild(btn);
@@ -252,11 +256,9 @@ function updateShopUI() {
 function buyItem(idx) {
     let item = shopItems[idx];
     if (score >= item.cost) {
-        if (item.action === 'life' && lives < 5) {
-            lives++; score -= item.cost;
-        } else if (item.action === 'width' && bed) {
-            bed.w = 180; score -= item.cost;
-        } else if (item.action === 'slow') {
+        if (item.action === 'life' && lives < 5) { lives++; score -= item.cost; }
+        else if (item.action === 'width' && bed) { bed.w = 180; score -= item.cost; }
+        else if (item.action === 'slow') {
             dx = Math.sign(dx) * Math.max(2, Math.abs(dx) - 2);
             dy = Math.sign(dy) * Math.max(2, Math.abs(dy) - 2);
             score -= item.cost;
@@ -286,27 +288,14 @@ document.addEventListener('keydown', e => {
     
     if (e.key === 'Tab' || e.key === 'F2') {
         e.preventDefault();
-        if (gameState !== 'admin') {
-            prevState = gameState;
-            toggleMenu('admin');
-        } else {
-            toggleMenu(prevState);
-        }
+        if (gameState !== 'admin') { prevState = gameState; toggleMenu('admin'); }
+        else { toggleMenu(prevState); }
     }
-    
     if (e.key === 'F11') { e.preventDefault(); toggleFullscreen(); }
-    if (e.key === 'Escape' && (gameState === 'shop' || gameState === 'admin' || gameState === 'help' || gameState === 'settings')) {
-        toggleMenu('menu');
-    }
-    if (e.key === 'b' || e.key === 'B' || e.key === 'и' || e.key === 'И') {
-        if (gameState === 'playing') toggleMenu('shop');
-    }
-    if (e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К') {
-        if (gameState === 'gameover' || gameState === 'glitch-victory') restartGame();
-    }
-    if (e.key === 'm' || e.key === 'M' || e.key === 'ь' || e.key === 'Ь') {
-        if (gameState === 'gameover' || gameState === 'glitch-victory') goToMenu();
-    }
+    if (e.key === 'Escape' && ['shop', 'admin', 'help', 'settings'].includes(gameState)) toggleMenu('menu');
+    if ((e.key === 'b' || e.key === 'B' || e.key === 'и' || e.key === 'И') && gameState === 'playing') toggleMenu('shop');
+    if ((e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К') && ['gameover', 'glitch-victory'].includes(gameState)) restartGame();
+    if ((e.key === 'm' || e.key === 'M' || e.key === 'ь' || e.key === 'Ь') && ['gameover', 'glitch-victory'].includes(gameState)) goToMenu();
 });
 
 document.addEventListener('keyup', e => {
@@ -318,21 +307,19 @@ document.addEventListener('keyup', e => {
     if (e.key === 'ArrowDown') keys.down = false;
 });
 
-// --- ГЛАВНЫЙ ЦИКЛ (LOGIC) ---
+// --- ЛОГИКА ---
 function update() {
     if (gameState === 'playing') {
         if (keys.left && bed.x > 0) bed.x -= platformSpeed;
         if (keys.right && bed.x + bed.w < WIDTH) bed.x += platformSpeed;
         
-        verity.x += dx;
-        verity.y += dy;
+        verity.x += dx; verity.y += dy;
 
         if (verity.x <= 0) { verity.x = 0; if (dx < 0) dx *= -1; }
         if (verity.x + verity.w >= WIDTH) { verity.x = WIDTH - verity.w; if (dx > 0) dx *= -1; }
-        if (verity.y <= 60) { verity.y = 60; if (dy < 0) dy *= -1; } // Отступ сверху для UI
+        if (verity.y <= 60) { verity.y = 60; if (dy < 0) dy *= -1; }
 
-        if (verity.y + verity.h >= bed.y && verity.y + verity.h <= bed.y + 20 &&
-            verity.x + verity.w >= bed.x && verity.x <= bed.x + bed.w && dy > 0) {
+        if (verity.y + verity.h >= bed.y && verity.y + verity.h <= bed.y + 20 && verity.x + verity.w >= bed.x && verity.x <= bed.x + bed.w && dy > 0) {
             verity.y = bed.y - verity.h;
             dy = -Math.abs(dy);
             let offset = (verity.x + verity.w/2 - (bed.x + bed.w/2)) / (bed.w/2);
@@ -350,10 +337,9 @@ function update() {
                 document.getElementById('gameover').classList.add('active');
                 if (score > highScore) highScore = score;
                 playSfx('sfx-gameover');
-                bgm.pause(); // Ставим фоновую на паузу
+                bgm.pause();
             } else {
-                verity.x = WIDTH/2 - 15; verity.y = HEIGHT/2;
-                dx = currentDiffSpeed; dy = -currentDiffSpeed;
+                verity.x = WIDTH/2 - 15; verity.y = HEIGHT/2; dx = currentDiffSpeed; dy = -currentDiffSpeed;
             }
         } else if (verity.y > HEIGHT && godMode) {
             verity.y = HEIGHT - verity.h; dy = -Math.abs(dy);
@@ -361,47 +347,27 @@ function update() {
 
         for (let i = enemies.length - 1; i >= 0; i--) {
             let e = enemies[i];
-            if (verity.x < e.x + e.w && verity.x + verity.w > e.x &&
-                verity.y < e.y + e.h && verity.y + verity.h > e.y) {
-                enemies.splice(i, 1);
-                score += 10;
-                dy *= -1;
-                
-                for(let p=0; p<5; p++) {
-                    particles.push({x: e.x+22, y: e.y+22, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 30});
-                }
-                
-                if (Math.random() < 0.05 && !isSecretLevel) {
-                    powerups.push({ x: e.x, y: e.y, type: 'glitch', timer: 0 });
-                } else if (Math.random() < 0.25) {
-                    powerups.push({ x: e.x, y: e.y, type: Math.random() < 0.5 ? 'expand' : 'slow', timer: 0 });
-                }
+            if (verity.x < e.x + e.w && verity.x + verity.w > e.x && verity.y < e.y + e.h && verity.y + verity.h > e.y) {
+                enemies.splice(i, 1); score += 10; dy *= -1;
+                for(let p=0; p<5; p++) particles.push({x: e.x+22, y: e.y+22, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 30});
+                if (Math.random() < 0.05 && !isSecretLevel) powerups.push({ x: e.x, y: e.y, type: 'glitch', timer: 0 });
+                else if (Math.random() < 0.25) powerups.push({ x: e.x, y: e.y, type: Math.random() < 0.5 ? 'expand' : 'slow', timer: 0 });
                 break;
             }
         }
 
         for (let i = powerups.length - 1; i >= 0; i--) {
-            let p = powerups[i];
-            p.y += 3;
-            p.timer++;
+            let p = powerups[i]; p.y += 3; p.timer++;
             if (p.x < bed.x + bed.w && p.x + 20 > bed.x && p.y < bed.y + bed.h && p.y + 20 > bed.y) {
-                if (p.type === 'glitch') {
-                    isSecretLevel = true;
-                    createLevel();
-                } else if (p.type === 'expand') {
-                    bed.w = 180; setTimeout(()=> { if(bed) bed.w = 100; }, 5000);
-                } else if (p.type === 'slow') {
-                    dx *= 0.6; dy *= 0.6;
-                }
+                if (p.type === 'glitch') { isSecretLevel = true; createLevel(); }
+                else if (p.type === 'expand') { bed.w = 180; setTimeout(()=> { if(bed) bed.w = 100; }, 5000); }
+                else if (p.type === 'slow') { dx *= 0.6; dy *= 0.6; }
                 powerups.splice(i, 1);
-            } else if (p.y > HEIGHT) {
-                powerups.splice(i, 1);
-            }
+            } else if (p.y > HEIGHT) powerups.splice(i, 1);
         }
 
         for (let i = particles.length - 1; i >= 0; i--) {
-            let p = particles[i];
-            p.x += p.vx; p.y += p.vy; p.life--;
+            let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life--;
             if (p.life <= 0) particles.splice(i, 1);
         }
 
@@ -410,8 +376,7 @@ function update() {
                 gameState = 'glitch-victory';
                 document.getElementById('gv-score').innerText = TEXTS[currentLang].total + score;
                 document.getElementById('glitch-victory').classList.add('active');
-                playSfx('sfx-victory');
-                bgm.pause();
+                playSfx('sfx-victory'); bgm.pause();
                 if (score > highScore) highScore = score;
             } else if (level >= 3) {
                 gameState = 'gameover';
@@ -419,44 +384,30 @@ function update() {
                 document.getElementById('go-title').style.color = '#00ff00';
                 document.getElementById('go-score').innerText = TEXTS[currentLang].total + score;
                 document.getElementById('gameover').classList.add('active');
-                playSfx('sfx-victory');
-                bgm.pause();
+                playSfx('sfx-victory'); bgm.pause();
                 if (score > highScore) highScore = score;
-            } else {
-                level++;
-                createLevel();
-            }
+            } else { level++; createLevel(); }
         }
-    } 
-    else if (gameState === 'multiplayer') {
+    } else if (gameState === 'multiplayer') {
         if (keys.w && p1Y > 0) p1Y -= 8;
         if (keys.s && p1Y < HEIGHT - 90) p1Y += 8;
         if (keys.up && p2Y > 0) p2Y -= 8;
         if (keys.down && p2Y < HEIGHT - 90) p2Y += 8;
 
-        mpBall.x += mpDx;
-        mpBall.y += mpDy;
+        mpBall.x += mpDx; mpBall.y += mpDy;
 
         if (mpBall.y <= 0) { mpBall.y = 0; mpDy *= -1; }
         if (mpBall.y + mpBall.size >= HEIGHT) { mpBall.y = HEIGHT - mpBall.size; mpDy *= -1; }
 
-        if (mpBall.x <= 20 + 90 && mpBall.y + mpBall.size >= p1Y && mpBall.y <= p1Y + 30 && mpDx < 0) {
-            mpBall.x = 20 + 90;
-            mpDx = Math.abs(mpDx);
-            mpDy = (mpBall.y + 15 - (p1Y + 15)) / 5;
+        if (mpBall.x <= 110 && mpBall.y + mpBall.size >= p1Y && mpBall.y <= p1Y + 30 && mpDx < 0) {
+            mpBall.x = 110; mpDx = Math.abs(mpDx); mpDy = (mpBall.y + 15 - (p1Y + 15)) / 5;
         }
         if (mpBall.x + mpBall.size >= WIDTH - 110 && mpBall.y + mpBall.size >= p2Y && mpBall.y <= p2Y + 30 && mpDx > 0) {
-            mpBall.x = WIDTH - 110 - mpBall.size;
-            mpDx = -Math.abs(mpDx);
-            mpDy = (mpBall.y + 15 - (p2Y + 15)) / 5;
+            mpBall.x = WIDTH - 110 - mpBall.size; mpDx = -Math.abs(mpDx); mpDy = (mpBall.y + 15 - (p2Y + 15)) / 5;
         }
 
-        if (mpBall.x < 0) {
-            p2Score++; mpBall = { x: WIDTH/2 - 15, y: HEIGHT/2 - 15, size: 30 }; mpDx = 6; mpDy = Math.random() > 0.5 ? 6 : -6;
-        }
-        if (mpBall.x > WIDTH) {
-            p1Score++; mpBall = { x: WIDTH/2 - 15, y: HEIGHT/2 - 15, size: 30 }; mpDx = -6; mpDy = Math.random() > 0.5 ? 6 : -6;
-        }
+        if (mpBall.x < 0) { p2Score++; mpBall = { x: WIDTH/2 - 15, y: HEIGHT/2 - 15, size: 30 }; mpDx = 6; mpDy = Math.random() > 0.5 ? 6 : -6; }
+        if (mpBall.x > WIDTH) { p1Score++; mpBall = { x: WIDTH/2 - 15, y: HEIGHT/2 - 15, size: 30 }; mpDx = -6; mpDy = Math.random() > 0.5 ? 6 : -6; }
     }
 }
 
@@ -466,30 +417,20 @@ function draw() {
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
     if (gameState === 'playing') {
-        if (imgs.bed.isBroken) {
-            ctx.fillStyle = '#8b4513'; ctx.fillRect(bed.x, bed.y, bed.w, bed.h);
-        } else {
-            ctx.drawImage(imgs.bed, bed.x, bed.y, bed.w, bed.h);
-        }
+        if (imgs.bed.isBroken) { ctx.fillStyle = '#8b4513'; ctx.fillRect(bed.x, bed.y, bed.w, bed.h); }
+        else ctx.drawImage(imgs.bed, bed.x, bed.y, bed.w, bed.h);
 
-        if (imgs.verity.isBroken) {
-            ctx.beginPath(); ctx.arc(verity.x + 15, verity.y + 15, 15, 0, Math.PI*2); ctx.fillStyle = 'yellow'; ctx.fill();
-        } else {
-            ctx.drawImage(imgs.verity, verity.x, verity.y, verity.w, verity.h);
-        }
+        if (imgs.verity.isBroken) { ctx.beginPath(); ctx.arc(verity.x + 15, verity.y + 15, 15, 0, Math.PI*2); ctx.fillStyle = 'yellow'; ctx.fill(); }
+        else ctx.drawImage(imgs.verity, verity.x, verity.y, verity.w, verity.h);
 
         enemies.forEach(e => {
-            if (imgs.egg.isBroken) {
-                ctx.fillStyle = '#ffccaa'; ctx.fillRect(e.x, e.y, e.w, e.h);
-            } else {
-                ctx.drawImage(imgs.egg, e.x, e.y, e.w, e.h);
-            }
+            if (imgs.egg.isBroken) { ctx.fillStyle = '#ffccaa'; ctx.fillRect(e.x, e.y, e.w, e.h); }
+            else ctx.drawImage(imgs.egg, e.x, e.y, e.w, e.h);
         });
 
         powerups.forEach(p => {
             let color = p.type === 'glitch' ? `hsl(${p.timer*10 % 360}, 100%, 50%)` : (p.type === 'expand' ? '#00ff00' : '#0088ff');
-            ctx.fillStyle = color;
-            ctx.fillRect(p.x, p.y, 20, 20);
+            ctx.fillStyle = color; ctx.fillRect(p.x, p.y, 20, 20);
         });
 
         particles.forEach(p => {
@@ -497,59 +438,32 @@ function draw() {
             ctx.beginPath(); ctx.arc(p.x, p.y, p.life/5, 0, Math.PI*2); ctx.fill();
         });
 
-        // УВЕЛИЧЕННЫЕ UI ЭЛЕМЕНТЫ (ПОД РАЗМЕР 700x700)
         drawText(`${score}`, 80, 30, 24, 'white');
         drawText(`${isSecretLevel ? 'SECRET' : level}`, WIDTH/2, 30, 24, '#ccc');
         drawText(`${lives}`, WIDTH - 80, 30, 24, '#ff6666');
         if (godMode) drawText('GOD MODE', WIDTH/2, 60, 18, 'yellow');
     } 
     else if (gameState === 'multiplayer') {
-        ctx.save();
-        ctx.translate(20, p1Y + 45);
-        ctx.rotate(Math.PI/2);
+        ctx.save(); ctx.translate(20, p1Y + 45); ctx.rotate(Math.PI/2);
         if (imgs.bed.isBroken) { ctx.fillStyle = '#8b4513'; ctx.fillRect(-45, -15, 90, 30); }
-        else { ctx.drawImage(imgs.bed, -45, -15, 90, 30); }
+        else ctx.drawImage(imgs.bed, -45, -15, 90, 30);
         ctx.restore();
 
-        ctx.save();
-        ctx.translate(WIDTH - 20, p2Y + 45);
-        ctx.rotate(-Math.PI/2);
+        ctx.save(); ctx.translate(WIDTH - 20, p2Y + 45); ctx.rotate(-Math.PI/2);
         if (imgs.bed.isBroken) { ctx.fillStyle = '#8b4513'; ctx.fillRect(-45, -15, 90, 30); }
-        else { ctx.drawImage(imgs.bed, -45, -15, 90, 30); }
+        else ctx.drawImage(imgs.bed, -45, -15, 90, 30);
         ctx.restore();
 
-        if (imgs.verity.isBroken) {
-            ctx.beginPath(); ctx.arc(mpBall.x + 15, mpBall.y + 15, 15, 0, Math.PI*2); ctx.fillStyle = 'yellow'; ctx.fill();
-        } else {
-            ctx.drawImage(imgs.verity, mpBall.x, mpBall.y, mpBall.size, mpBall.size);
-        }
+        if (imgs.verity.isBroken) { ctx.beginPath(); ctx.arc(mpBall.x + 15, mpBall.y + 15, 15, 0, Math.PI*2); ctx.fillStyle = 'yellow'; ctx.fill(); }
+        else ctx.drawImage(imgs.verity, mpBall.x, mpBall.y, mpBall.size, mpBall.size);
 
         drawText(`${p1Score} : ${p2Score}`, WIDTH/2, 50, 50, 'white');
-        
-        if (p1Score >= 5 || p2Score >= 5) {
-            drawText(p1Score >= 5 ? "P1 WINS!" : "P2 WINS!", WIDTH/2, HEIGHT/2, 50, '#00ff00');
-        }
+        if (p1Score >= 5 || p2Score >= 5) drawText(p1Score >= 5 ? "P1 WINS!" : "P2 WINS!", WIDTH/2, HEIGHT/2, 50, '#00ff00');
     }
 }
 
-// --- ЗАПУСК И АВТОЗАПУСК МУЗЫКИ ---
 function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
+    update(); draw(); requestAnimationFrame(gameLoop);
 }
-
-// Хитрый трюк для браузеров: включаем музыку при ЛЮБОМ клике или нажатии клавиши
-function unlockAudio() {
-    if (musicPlaying && bgm.paused) {
-        playMusic();
-    }
-    // Удаляем слушатели после первого срабатывания, чтобы не спамить
-    window.removeEventListener('click', unlockAudio);
-    window.removeEventListener('keydown', unlockAudio);
-}
-
-window.addEventListener('click', unlockAudio);
-window.addEventListener('keydown', unlockAudio);
 
 gameLoop();
