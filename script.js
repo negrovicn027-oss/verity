@@ -22,7 +22,10 @@ const TEXTS = {
         lose: "НАГИЕВ ПОБЕДИЛ...", win: "ПОЛНАЯ ПОБЕДА!", winSub: "НАГИЕВ УБРАН!",
         total: "Убрано Нагиевых: ", newRec: "НОВЫЙ РЕКОРД!",
         helpTxt: "Управление: ← и →<br>МУЛЬТИПЛЕЕР: P1 (W/S), P2 (Стрелки)<br>Секретный куб: ловите кроватью!<br>TAB - Админка<br>B - Магазин<br>F11 - Полный экран",
-        admin: "АДМИН ПАНЕЛЬ", godOn: "Бессмертие: ВКЛ", godOff: "Бессмертие: ВЫКЛ"
+        admin: "АДМИН ПАНЕЛЬ", godOn: "Бессмертие: ВКЛ", godOff: "Бессмертие: ВЫКЛ",
+        // ДОБАВЛЕНО ДЛЯ ПЕРЕВОДА СЛОЖНОСТЕЙ И МАГАЗИНА
+        slowDiff: "Медленно", mediumDiff: "Средне", fastDiff: "Быстро",
+        shopLife: "Доп. жизнь", shopWidth: "Широкая кровать", shopSlow: "Сброс скорости"
     },
     en: {
         title: "VERITY", sub: "JUMPS ON THE BED", goal: "GOAL: REMOVE NAGIEV",
@@ -33,52 +36,46 @@ const TEXTS = {
         lose: "NAGIEV WON...", win: "TOTAL VICTORY!", winSub: "NAGIEV IS GONE!",
         total: "Nagievs removed: ", newRec: "NEW RECORD!",
         helpTxt: "Controls: ← and →<br>MULTIPLAYER: P1 (W/S), P2 (Arrows)<br>Secret cube: catch it with the bed!<br>TAB - Admin Panel<br>B - Shop<br>F11 - Fullscreen",
-        admin: "ADMIN PANEL", godOn: "God Mode: ON", godOff: "God Mode: OFF"
+        admin: "ADMIN PANEL", godOn: "God Mode: ON", godOff: "God Mode: OFF",
+        // ДОБАВЛЕНО ДЛЯ ПЕРЕВОДА СЛОЖНОСТЕЙ И МАГАЗИНА
+        slowDiff: "Slow", mediumDiff: "Medium", fastDiff: "Fast",
+        shopLife: "Extra Life", shopWidth: "Wide Bed", shopSlow: "Reset Speed"
     }
 };
 
+// Физика и объекты
 let bed, verity, enemies = [], powerups = [], particles = [];
 let dx = 5, dy = -5, platformSpeed = 6;
 let currentDiffSpeed = 5;
 const keys = { left: false, right: false, w: false, s: false, up: false, down: false };
 
-let p1Y = 300, p2Y = 300, p1Score = 0, p2Score = 0, mpDx = 6, mpDy = 6, mpBall = {x: 350, y: 350, size: 30};
+// Мультиплеер
+let p1Y = 300, p2Y = 300, p1Score = 0, p2Score = 0, mpDx = 6, mpDy = 6, mpBall = {x: WIDTH/2, y: HEIGHT/2, size: 30};
 
+// Ассеты
 const imgs = { verity: new Image(), bed: new Image(), egg: new Image() };
 imgs.verity.src = 'verity.png'; imgs.bed.src = 'bed.png'; imgs.egg.src = 'egg.png';
 imgs.verity.onerror = () => imgs.verity.isBroken = true;
 imgs.bed.onerror = () => imgs.bed.isBroken = true;
 imgs.egg.onerror = () => imgs.egg.isBroken = true;
 
-// --- АУДИО СИСТЕМА ---
+// --- АУДИО ---
 const bgm = document.getElementById('bgm');
 const playlist = ['verity_theme.mp3', 'track2.mp3', 'track3.mp3'];
-let trackIdx = 0;
-let musicPlaying = true;
-let volume = 0.5;
+let trackIdx = 0, musicPlaying = true, volume = 0.5;
 bgm.volume = volume;
-
-// Подготовка трека без запуска
 bgm.src = playlist[trackIdx];
 
 function playMusic() {
     if (!musicPlaying) return;
-    bgm.play().catch(e => {
-        console.log("Браузер заблокировал музыку. Ждем клика.", e);
-    });
+    bgm.play().catch(() => { console.log("Ждем клика для музыки..."); });
 }
 
-// МАГИЯ: Разблокировка звука при первом же клике или нажатии клавиши
 function unlockAudio() {
-    if (musicPlaying && bgm.paused) {
-        playMusic();
-    }
-    // Удаляем события после первого клика, они больше не нужны
+    if (musicPlaying && bgm.paused) playMusic();
     document.removeEventListener('pointerdown', unlockAudio);
     document.removeEventListener('keydown', unlockAudio);
 }
-
-// Слушаем ЛЮБОЕ касание экрана или нажатие клавиши
 document.addEventListener('pointerdown', unlockAudio, { once: true });
 document.addEventListener('keydown', unlockAudio, { once: true });
 
@@ -111,7 +108,7 @@ function startGame() {
     score = 0; lives = 3; level = 1; platformSpeed = 6;
     isSecretLevel = false; godMode = false;
     createLevel();
-    if (musicPlaying) playMusic(); // Возобновляем музыку
+    if (musicPlaying) playMusic();
 }
 
 function createLevel() {
@@ -149,7 +146,7 @@ function goToMenu() {
     if (score > highScore) highScore = score;
     document.getElementById('ui-record').innerText = TEXTS[currentLang].record + highScore;
     toggleMenu('menu');
-    if (musicPlaying) playMusic(); // Возобновляем музыку
+    if (musicPlaying) playMusic();
 }
 
 // --- МУЛЬТИПЛЕЕР ---
@@ -190,6 +187,7 @@ function setDiff(diff, event) {
 function toggleLang() {
     currentLang = currentLang === 'ru' ? 'en' : 'ru';
     const t = TEXTS[currentLang];
+    
     document.getElementById('ui-title').innerText = t.title;
     document.getElementById('ui-subtitle').innerText = t.sub;
     document.getElementById('ui-goal').innerText = t.goal;
@@ -212,6 +210,13 @@ function toggleLang() {
     document.getElementById('btn-menu').innerText = t.menu;
     document.getElementById('btn-fs').innerText = t.fs;
     document.getElementById('btn-music').innerText = musicPlaying ? t.music : t.muted;
+
+    // ПЕРЕВОДИМ КНОПКИ СЛОЖНОСТИ
+    document.getElementById('btn-slow').innerText = t.slowDiff;
+    document.getElementById('btn-medium').innerText = t.mediumDiff;
+    document.getElementById('btn-fast').innerText = t.fastDiff;
+    
+    // ЕСЛИ ОТКРЫТ МАГАЗИН, ПЕРЕРИСОВЫВАЕМ ЕГО
     if (gameState === 'shop') updateShopUI();
 }
 
@@ -234,19 +239,22 @@ function toggleFullscreen() {
 }
 
 // --- МАГАЗИН ---
+// Теперь используем ключи из TEXTS, а не жестко заданные названия
 const shopItems = [
-    { name: "Доп. жизнь", cost: 100, action: "life" },
-    { name: "Широкая кровать", cost: 50, action: "width" },
-    { name: "Сброс скорости", cost: 30, action: "slow" }
+    { key: "shopLife", cost: 100, action: "life" },
+    { key: "shopWidth", cost: 50, action: "width" },
+    { key: "shopSlow", cost: 30, action: "slow" }
 ];
 
 function updateShopUI() {
     document.getElementById('ui-points').innerText = TEXTS[currentLang].points + score;
     const container = document.getElementById('shop-items');
     container.innerHTML = '';
+    
+    // Берем перевод из TEXTS по ключу
     shopItems.forEach((item, idx) => {
         let btn = document.createElement('button');
-        btn.innerText = `${item.name} - ${item.cost}`;
+        btn.innerText = `${TEXTS[currentLang][item.key]} - ${item.cost}`;
         btn.style.background = score >= item.cost ? '#2e7d32' : '#444';
         btn.onclick = () => buyItem(idx);
         container.appendChild(btn);
