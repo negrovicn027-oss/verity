@@ -1,7 +1,8 @@
 // --- НАСТРОЙКИ И ПЕРЕМЕННЫЕ ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const WIDTH = 500, HEIGHT = 500;
+// УВЕЛИЧИЛИ ЭКРАН ДО 700x700
+const WIDTH = 700, HEIGHT = 700; 
 
 let gameState = 'menu'; 
 let prevState = 'menu';
@@ -46,9 +47,9 @@ let currentDiffSpeed = 5;
 const keys = { left: false, right: false, w: false, s: false, up: false, down: false };
 
 // Мультиплеер
-let p1Y = 200, p2Y = 200, p1Score = 0, p2Score = 0, mpDx = 6, mpDy = 6, mpBall = {x: 250, y: 250, size: 30};
+let p1Y = 300, p2Y = 300, p1Score = 0, p2Score = 0, mpDx = 6, mpDy = 6, mpBall = {x: WIDTH/2, y: HEIGHT/2, size: 30};
 
-// Ассеты (заглушки, если картинок нет)
+// Ассеты
 const imgs = { verity: new Image(), bed: new Image(), egg: new Image() };
 imgs.verity.src = 'verity.png'; imgs.bed.src = 'bed.png'; imgs.egg.src = 'egg.png';
 imgs.verity.onerror = () => imgs.verity.isBroken = true;
@@ -61,7 +62,16 @@ const playlist = ['verity_theme.mp3', 'track2.mp3', 'track3.mp3'];
 let trackIdx = 0, musicPlaying = true, volume = 0.5;
 bgm.volume = volume;
 
+// Функция остановки всех SFX
+function stopAllSfx() {
+    const sfx1 = document.getElementById('sfx-gameover');
+    const sfx2 = document.getElementById('sfx-victory');
+    if (sfx1) { sfx1.pause(); sfx1.currentTime = 0; }
+    if (sfx2) { sfx2.pause(); sfx2.currentTime = 0; }
+}
+
 function playMusic() {
+    if (!musicPlaying) return;
     bgm.src = playlist[trackIdx];
     bgm.play().catch(() => { musicPlaying = false; });
 }
@@ -78,7 +88,7 @@ function drawText(text, x, y, size, color, center = true) {
 
 function playSfx(id) {
     const audio = document.getElementById(id);
-    if (audio && audio.readyState >= 2) {
+    if (audio) {
         audio.currentTime = 0;
         audio.play().catch(()=>{});
     }
@@ -86,6 +96,7 @@ function playSfx(id) {
 
 // --- ИНИЦИАЛИЗАЦИЯ ИГРЫ ---
 function startGame() {
+    stopAllSfx(); // Останавливаем старые звуки
     toggleMenu('playing');
     score = 0; lives = 3; level = 1; platformSpeed = 6;
     isSecretLevel = false; godMode = false;
@@ -94,20 +105,20 @@ function startGame() {
 
 function createLevel() {
     verity = { x: WIDTH/2 - 15, y: HEIGHT/2, w: 30, h: 30 };
-    bed = { x: WIDTH/2 - 50, y: HEIGHT - 50, w: 100, h: 30 };
+    bed = { x: WIDTH/2 - 50, y: HEIGHT - 60, w: 100, h: 30 }; // Подняли кровать чуть выше
     enemies = [];
     powerups = [];
     particles = [];
     
-    let speedBase = isSecretLevel ? 3 : (gameState === 'multiplayer' ? 6 : currentDiffSpeed + (level-1)*0.5);
+    let speedBase = isSecretLevel ? 4 : (gameState === 'multiplayer' ? 6 : currentDiffSpeed + (level-1)*0.5);
     dx = speedBase; dy = -speedBase;
 
-    let rows = isSecretLevel ? 5 : 4;
-    let count = isSecretLevel ? 10 : 9;
+    let rows = isSecretLevel ? 6 : 5;
+    let count = isSecretLevel ? 12 : 10;
     let spacing = isSecretLevel ? 45 : 55;
 
     for (let j = 0; j < rows; j++) {
-        let y = 60 + (45 * j);
+        let y = 80 + (45 * j); // Чуть ниже от верха
         let x = WIDTH/2 - (count * spacing)/2;
         for (let i = 0; i < count; i++) {
             enemies.push({ x: x, y: y, w: 45, h: 45 });
@@ -118,9 +129,19 @@ function createLevel() {
 }
 
 function restartGame() {
+    stopAllSfx(); // Глушим звук проигрыша
     document.getElementById('gameover').classList.remove('active');
     document.getElementById('glitch-victory').classList.remove('active');
     startGame();
+}
+
+function goToMenu() {
+    stopAllSfx(); // Глушим звук проигрыша при выходе в меню
+    if (score > highScore) highScore = score;
+    document.getElementById('go-score').innerText = TEXTS[currentLang].total + score;
+    document.getElementById('ui-record').innerText = TEXTS[currentLang].record + highScore;
+    toggleMenu('menu');
+    if (musicPlaying) playMusic(); // Возобновляем фоновую музыку
 }
 
 // --- МУЛЬТИПЛЕЕР ---
@@ -140,6 +161,7 @@ function toggleMenu(state) {
     if (state === 'menu') {
         gameState = 'menu';
         document.getElementById('menu').classList.add('active');
+        stopAllSfx();
     } else if (state === 'playing' || state === 'multiplayer') {
         gameState = state;
     } else {
@@ -220,7 +242,7 @@ function updateShopUI() {
     shopItems.forEach((item, idx) => {
         let btn = document.createElement('button');
         btn.innerText = `${item.name} - ${item.cost}`;
-        btn.style.margin = '5px 0';
+        btn.style.margin = '8px 0';
         btn.style.background = score >= item.cost ? '#2e7d32' : '#444';
         btn.onclick = () => buyItem(idx);
         container.appendChild(btn);
@@ -233,7 +255,7 @@ function buyItem(idx) {
         if (item.action === 'life' && lives < 5) {
             lives++; score -= item.cost;
         } else if (item.action === 'width' && bed) {
-            bed.w = 160; score -= item.cost;
+            bed.w = 180; score -= item.cost;
         } else if (item.action === 'slow') {
             dx = Math.sign(dx) * Math.max(2, Math.abs(dx) - 2);
             dy = Math.sign(dy) * Math.max(2, Math.abs(dy) - 2);
@@ -283,7 +305,7 @@ document.addEventListener('keydown', e => {
         if (gameState === 'gameover' || gameState === 'glitch-victory') restartGame();
     }
     if (e.key === 'm' || e.key === 'M' || e.key === 'ь' || e.key === 'Ь') {
-        if (gameState === 'gameover' || gameState === 'glitch-victory') toggleMenu('menu');
+        if (gameState === 'gameover' || gameState === 'glitch-victory') goToMenu();
     }
 });
 
@@ -307,7 +329,7 @@ function update() {
 
         if (verity.x <= 0) { verity.x = 0; if (dx < 0) dx *= -1; }
         if (verity.x + verity.w >= WIDTH) { verity.x = WIDTH - verity.w; if (dx > 0) dx *= -1; }
-        if (verity.y <= 40) { verity.y = 40; if (dy < 0) dy *= -1; }
+        if (verity.y <= 60) { verity.y = 60; if (dy < 0) dy *= -1; } // Отступ сверху для UI
 
         if (verity.y + verity.h >= bed.y && verity.y + verity.h <= bed.y + 20 &&
             verity.x + verity.w >= bed.x && verity.x <= bed.x + bed.w && dy > 0) {
@@ -327,7 +349,8 @@ function update() {
                 document.getElementById('go-score').innerText = TEXTS[currentLang].total + score;
                 document.getElementById('gameover').classList.add('active');
                 if (score > highScore) highScore = score;
-                playSfx('sfx-break');
+                playSfx('sfx-gameover');
+                bgm.pause(); // Ставим фоновую на паузу
             } else {
                 verity.x = WIDTH/2 - 15; verity.y = HEIGHT/2;
                 dx = currentDiffSpeed; dy = -currentDiffSpeed;
@@ -366,7 +389,7 @@ function update() {
                     isSecretLevel = true;
                     createLevel();
                 } else if (p.type === 'expand') {
-                    bed.w = 160; setTimeout(()=> { if(bed) bed.w = 100; }, 5000);
+                    bed.w = 180; setTimeout(()=> { if(bed) bed.w = 100; }, 5000);
                 } else if (p.type === 'slow') {
                     dx *= 0.6; dy *= 0.6;
                 }
@@ -388,6 +411,7 @@ function update() {
                 document.getElementById('gv-score').innerText = TEXTS[currentLang].total + score;
                 document.getElementById('glitch-victory').classList.add('active');
                 playSfx('sfx-victory');
+                bgm.pause();
                 if (score > highScore) highScore = score;
             } else if (level >= 3) {
                 gameState = 'gameover';
@@ -396,6 +420,7 @@ function update() {
                 document.getElementById('go-score').innerText = TEXTS[currentLang].total + score;
                 document.getElementById('gameover').classList.add('active');
                 playSfx('sfx-victory');
+                bgm.pause();
                 if (score > highScore) highScore = score;
             } else {
                 level++;
@@ -472,10 +497,11 @@ function draw() {
             ctx.beginPath(); ctx.arc(p.x, p.y, p.life/5, 0, Math.PI*2); ctx.fill();
         });
 
-        drawText(`${score}`, 60, 20, 16, 'white');
-        drawText(`${isSecretLevel ? 'SECRET' : level}`, WIDTH/2, 20, 16, '#ccc');
-        drawText(`${lives}`, WIDTH - 60, 20, 16, '#ff6666');
-        if (godMode) drawText('GOD MODE', WIDTH/2, 45, 12, 'yellow');
+        // УВЕЛИЧЕННЫЕ UI ЭЛЕМЕНТЫ (ПОД РАЗМЕР 700x700)
+        drawText(`${score}`, 80, 30, 24, 'white');
+        drawText(`${isSecretLevel ? 'SECRET' : level}`, WIDTH/2, 30, 24, '#ccc');
+        drawText(`${lives}`, WIDTH - 80, 30, 24, '#ff6666');
+        if (godMode) drawText('GOD MODE', WIDTH/2, 60, 18, 'yellow');
     } 
     else if (gameState === 'multiplayer') {
         ctx.save();
@@ -498,20 +524,32 @@ function draw() {
             ctx.drawImage(imgs.verity, mpBall.x, mpBall.y, mpBall.size, mpBall.size);
         }
 
-        drawText(`${p1Score} : ${p2Score}`, WIDTH/2, 40, 40, 'white');
+        drawText(`${p1Score} : ${p2Score}`, WIDTH/2, 50, 50, 'white');
         
         if (p1Score >= 5 || p2Score >= 5) {
-            drawText(p1Score >= 5 ? "P1 WINS!" : "P2 WINS!", WIDTH/2, HEIGHT/2, 40, '#00ff00');
+            drawText(p1Score >= 5 ? "P1 WINS!" : "P2 WINS!", WIDTH/2, HEIGHT/2, 50, '#00ff00');
         }
     }
 }
 
-// --- ЗАПУСК ---
+// --- ЗАПУСК И АВТОЗАПУСК МУЗЫКИ ---
 function gameLoop() {
     update();
     draw();
     requestAnimationFrame(gameLoop);
 }
 
-playMusic();
+// Хитрый трюк для браузеров: включаем музыку при ЛЮБОМ клике или нажатии клавиши
+function unlockAudio() {
+    if (musicPlaying && bgm.paused) {
+        playMusic();
+    }
+    // Удаляем слушатели после первого срабатывания, чтобы не спамить
+    window.removeEventListener('click', unlockAudio);
+    window.removeEventListener('keydown', unlockAudio);
+}
+
+window.addEventListener('click', unlockAudio);
+window.addEventListener('keydown', unlockAudio);
+
 gameLoop();
