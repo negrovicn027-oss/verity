@@ -1,0 +1,109 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #111;
+    color: white;
+    font-family: 'Verdana', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+}
+
+#game-container {
+    position: relative;
+    width: 500px;
+    height: 500px;
+    box-shadow: 0 0 20px rgba(255, 255, 0, 0.2);
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: #14141e;
+    border-radius: 8px;
+}
+
+/* UI Overlays */
+.overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    z-index: 10;
+}
+
+.overlay.active {
+    display: flex;
+}
+
+h1, h2 {
+    margin: 5px 0;
+    color: #ffff00;
+    text-shadow: 2px 2px 0 #000;
+    text-align: center;
+}
+
+p {
+    margin: 5px 0;
+    font-size: 14px;
+    text-align: center;
+    color: #ccc;
+}
+
+button {
+    margin: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    border: 2px solid white;
+    border-radius: 5px;
+    background: #444;
+    color: white;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #666;
+    transform: scale(1.05);
+}
+
+.btn-green { background: #2e7d32; border-color: #4caf50; }
+.btn-red { background: #c62828; border-color: #e53935; }
+.btn-blue { background: #1565c0; border-color: #42a5f5; }
+
+.row { display: flex; flex-wrap: wrap; justify-content: center; width: 90%; }
+.hidden { display: none !important; }
+
+/* Кнопки сложности */
+.diff-btn {
+    border-color: white;
+}
+.active-diff {
+    border-color: yellow;
+    box-shadow: 0 0 10px yellow;
+}
+
+/* Glitch effect */
+@keyframes glitch {
+    0% { transform: translate(0) }
+    20% { transform: translate(-5px, 5px) }
+    40% { transform: translate(-5px, -5px) }
+    60% { transform: translate(5px, 5px) }
+    80% { transform: translate(5px, -5px) }
+    100% { transform: translate(0) }
+}
+
+.glitch-text {
+    animation: glitch 0.2s infinite;
+    color: #ff00ff;
+}
